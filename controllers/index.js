@@ -49,6 +49,49 @@ var indexController = {
 
 };
 
+
+var FeedEntry = function(feedJsonData) {
+
+	for(var key in feedJsonData) {
+
+		this[key] = feedJsonData[key];
+
+	}
+
+};
+
+var FeedTotalObject = function(metaDataObject) {
+
+	this.entries = [];
+
+	this.title = metaDataObject.metaTitle;
+	this.link = metaDataObject.metaLink;
+	this.date = metaDataObject.metaDate;
+
+	this.addEntry = function(entryObject) {
+		this.entries.push(entryObject);
+
+		if(!this.title) {
+			this.title = entryObject.metaTitle;
+		}
+		if(!this.link) {
+			this.link = entryObject.metaLink;
+		}
+		if(!this.date) {
+			this.date = entryObject.metaDate;
+		}
+	};
+
+	this.info = function() {
+
+		console.log('Feed Title: ', this.title);
+		console.log('Feed Link: ', this.link);
+		console.log('Feed Date: ', this.date);
+		console.log('Feed Number of Entries: ', this.entries.length);
+	};
+
+};
+
 var queryFeed = function(rssUrl) {
 
 	var rssData = parser(rssUrl, function(error, result) {
@@ -61,35 +104,79 @@ var queryFeed = function(rssUrl) {
 
 			console.log('No error on the feed side!');
 
-			console.log('rssData type: ', typeof(rssData));
+			// console.log('rssData type: ', typeof(rssData));
 
-			console.log('rssData length: ', rssData.length);
 			// console.log('rssData keys: ', Object.keys(rssData));
+			var rssDataFirst = rssData['0'];
 
-			var rssDataTemp = rssData['0'];
+			var tempFeedObject = new FeedTotalObject({
+				metaTitle: rssDataFirst.meta.title,
+				metaLink: rssDataFirst.meta.link,
+				metaDate: rssDataFirst.meta.date
+			});
 
-			console.log('rssDataTemp type: ', typeof(rssDataTemp));
+			for(var key in Object.keys(rssData)) {
+
+				var rssDataTemp = rssData[key];
+
+				// console.log('rssDataTemp type: ', typeof(rssDataTemp));
 
 
-			// var rssDataJson = xmlParser.toJson(rssDataTemp);
-			var rssDataJson = rssDataTemp;
-			// console.log('rssDataJson: ', rssDataJson);
+				// var rssDataJson = xmlParser.toJson(rssDataTemp);
+				var rssDataJson = rssDataTemp;
+				// console.log('rssDataJson: ', rssDataJson);
 
-			console.log('rssDataJson type: ', typeof(rssDataJson));
-			console.log('rssDataJson length: ', rssDataJson.length);
-			console.log('rssDataJson keys: ', Object.keys(rssDataJson));
+				// console.log('rssDataJson type: ', typeof(rssDataJson));
+				// console.log('rssDataJson length: ', rssDataJson.length);
+				// console.log('rssDataJson keys: ', Object.keys(rssDataJson));
 
-			console.log('rssDataJson title: ', rssDataJson.title);
-			console.log('rssDataJson date: ', rssDataJson.date);
-			console.log('rssDataJson pubDate: ', rssDataJson.pubdate);
-			console.log('rssDataJson pubDate2: ', rssDataJson.pubDate);
-			console.log('rssDataJson summary: ', rssDataJson.summary);
-			console.log('rssDataJson description: ', rssDataJson.description);
+				// console.log('rssDataJson title: ', rssDataJson.title);
+				// console.log('rssDataJson date: ', rssDataJson.date);
+				// console.log('rssDataJson pubDate: ', rssDataJson.pubdate);
+				// console.log('rssDataJson pubDate2: ', rssDataJson.pubDate);
+				// console.log('rssDataJson summary: ', rssDataJson.summary);
+				// console.log('rssDataJson description: ', rssDataJson.description);
 
-			console.log('rssDataJson link: ', rssDataJson.guid);
-			console.log('rssDataJson tags: ', rssDataJson.categories);
+				// console.log('rssDataJson link: ', rssDataJson.guid);
+				// console.log('rssDataJson tags: ', rssDataJson.categories);
 
-			return result;
+
+				var tempEntryObject = new FeedEntry({
+					title: rssDataJson.title,
+					date: rssDataJson.data,
+					pubdate: rssDataJson.pubdate,
+					pubDate: rssDataJson.pubDate,
+					summary: rssDataJson.summary,
+					description: rssDataJson.description,
+					link: rssDataJson.link,
+					tags: rssDataJson.categories,
+					metaTitle: rssDataJson.meta.title,
+					metaDate: rssDataJson.meta.date,
+					metaLink: rssDataJson.meta.link
+				});
+
+
+				tempFeedObject.addEntry(tempEntryObject);
+
+				// console.log('rssData meta: ', rssDataJson.meta);
+
+				// console.log('Meta title: ', rssDataJson.meta.title);
+				// console.log('Meta date: ', rssDataJson.meta.date);
+				// console.log('Meta link: ', rssDataJson.meta.link);
+				// console.log('Meta keys: ', Object.keys(rssDataJson.meta));
+			}
+
+			// console.log('tempFeedObject entry 1: ', tempFeedObject.entries[7]);
+
+
+			tempFeedObject.info();
+
+			// console.log('tempFeedObject total entries: ', tempFeedObject.entries.length);
+			// console.log('tempFeedObject title: ', tempFeedObject.title);
+			// console.log('tempFeedObject link: ', tempFeedObject.link);
+			// console.log('tempFeedObject date:', tempFeedObject.date);
+			
+			return tempFeedObject;
 		}
 	});
 
