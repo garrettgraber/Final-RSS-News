@@ -1,6 +1,27 @@
 {
-	"dependencies": {
-		"express": "4.x",
-		"body-parser": "1.x"
-	}
+  "dependencies": {
+    "async": "^0.9.0",
+    "body-parser": "1.x",
+    "express": "4.x",
+    "parse-rss": "^1.0.3",
+    "twitter": "^0.2.9",
+    "xml2json": "^0.4.0"
+  },
+  "name": "Final-RSS-News",
+  "version": "0.0.0",
+  "main": "app.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garrettgraber/Final-RSS-News.git"
+  },
+  "author": "Garrett Graber",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/garrettgraber/Final-RSS-News/issues"
+  },
+  "homepage": "https://github.com/garrettgraber/Final-RSS-News"
 }

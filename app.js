@@ -7,6 +7,11 @@ app.set('view engine', 'jade');
 app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
+
+
+indexController.populateFeeds();
+
+
 app.get('/', indexController.index);
 
 var server = app.listen(7162, function() {
