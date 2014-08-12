@@ -13,7 +13,7 @@ app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
 
 
-indexController.serverStart();
+indexController.serverStartTest();
 
 
 app.get('/', indexController.index);

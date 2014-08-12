@@ -3,12 +3,14 @@ var parser = require('parse-rss');
 var xmlParser = require('xml2json');
 var fs = require('fs');
 var mongoose = require('mongoose');
+var Q = require('q');
+
 
 var Feed = require('../models/model.js');
 
 // var rssFileList = ['feedTest', 'feedTest2'];
 
-var rssFileList = ['feedTest'];
+var rssFileList = ['feedTest', 'feedTest2'];
 
 var indexController = {
 	index: function(req, res) {
@@ -71,6 +73,36 @@ var indexController = {
 
 		});
 
+	},
+
+	serverStartTest: function() {
+
+		Feed.find({}).exec(function(error, result) {
+
+			if(error) {
+				console.log('Error finding dbase');
+			}
+			else {
+				if(Object.keys(result).length === 0) {
+
+					var rssDirectoryObjTemp = getFeedList(rssFileList);
+
+					for(var key in rssDirectoryObjTemp) {
+
+						var rssUrlListTemp = rssDirectoryObjTemp[key];
+						console.log('key: ', key);
+						console.log('rssUrlListTemp: ', rssUrlListTemp);
+						queryAllFeeds(rssUrlListTemp, key);
+
+					}
+
+
+				}
+			}
+
+
+
+		});
 	}
 
 };
@@ -217,6 +249,136 @@ var saveFeedDbase = function(rssUrlList, feedName) {
 	}
 	// console.log('rssData: ', rssData);
 	// return rssData;
+};
+
+var queryAllFeeds = function(rssList, fileName) {
+
+	var promisesArray = [];
+
+	for(var i=0; i , i < rssList.length; i++) {
+
+		// var promisesArray = [queryFeed(tempRSS), queryFeed(tempRSS2)];
+		promisesArray.push( queryFeed(rssList[ i ]) );
+
+	}
+
+	// Q.all([queryFeed(tempRSS), queryFeed(tempRSS2)]).spread(function(val1, val2) {
+
+	Q.all( promisesArray ).spread(function(feed1) {
+
+		console.log('\nNumber of feeds found: ', arguments.length);
+		console.log('fileName: ', fileName);
+
+		var masterFeedSaveList = [];
+		var feedObjectCreatedStatus = false;
+
+
+		for(var i=0; i < arguments.length; i++) {
+			var tempFeedObjectRaw = arguments[ i ];
+
+			var tempIValue = i + 1;
+			console.log('\nvalue' + tempIValue + ' entries: ', Object.keys(tempFeedObjectRaw).length);			
+
+
+
+			// console.log('tempFeedObjectRaw keys: ', Object.keys(tempFeedObjectRaw));
+			// console.log('Feed title: ', tempFeedObjectRaw.title);
+
+			var tempFeedObjectRawFirst = tempFeedObjectRaw['0'];
+
+			// console.log('tempFeedObjectRawFirst: ', tempFeedObjectRawFirst);
+
+			console.log('tripped the wire');
+			console.log('title: ', tempFeedObjectRawFirst.meta.title);
+			console.log('link: ', tempFeedObjectRawFirst.meta.link);
+			console.log('date: ', tempFeedObjectRawFirst.meta.date);
+
+			var tempFeedObject = new Feed({
+				name: fileName,
+				title: tempFeedObjectRawFirst.meta.title,
+				link: tempFeedObjectRawFirst.meta.link,
+				date: tempFeedObjectRawFirst.meta.date
+			});
+
+			console.log('Feed Object created');
+		
+
+	
+			// var tempFeedObject = createFeedObject(tempFeedObjectRaw, fileName);
+
+			// console.log('tempFeedObject:', tempFeedObject);
+
+			for(var key in tempFeedObjectRaw) {
+
+				var rssDataJson = tempFeedObjectRaw[key];
+
+				var tempEntryObject = new FeedEntry({
+					title: rssDataJson.title,
+					date: rssDataJson.data,
+					pubdate: rssDataJson.pubdate,
+					pubDate: rssDataJson.pubDate,
+					summary: rssDataJson.summary,
+					description: rssDataJson.description,
+					link: rssDataJson.guid,
+					tags: rssDataJson.categories,
+					metaTitle: rssDataJson.meta.title,
+					metaDate: rssDataJson.meta.date,
+					metaLink: rssDataJson.meta.link
+				});
+
+
+				tempFeedObject.addEntry(tempEntryObject);
+				// tempFeedObject.info();
+
+
+			}
+
+			masterFeedSaveList.push(tempFeedObject);
+			console.log('tempFeedObject entries: ', tempFeedObject.entries.length);
+
+		}
+
+		console.log('queryFeed has worked');
+		console.log('masterFeedSaveList length: ', masterFeedSaveList.length);
+	}).done();
+
+};
+
+var queryFeed = function(rssUrl) {
+
+	var deferred = Q.defer();
+	console.log('queryFeed has fired');
+
+
+	parser(rssUrl, function(error, result) {
+
+		if(error) {
+			console.log('bad rss parse');
+			// deferred.reject(new Error(error));
+			deferred.resolve({});
+		}
+		else {
+			// console.log('result: ', result);
+			console.log('good rss parse');
+			deferred.resolve(result);
+		}
+
+	});
+	return deferred.promise;
+};
+
+var createFeedObject = function(feedObjectRaw, fileName) {
+
+	console.log('createFeedObject function has fired');
+	var rssDataFirst = feedObjectRaw['0'];
+	var tempFeedObject = new Feed({
+		name: feedName,
+		title: rssDataFirst.meta.title,
+		link: rssDataFirst.meta.link,
+		date: rssDataFirst.meta.date
+	});
+	console.log('tempFeedObject: ', tempFeedObject);
+	return tempFeedObject;
 };
 
 var getFeedList = function(fileList) {
