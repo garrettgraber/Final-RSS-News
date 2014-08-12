@@ -2,8 +2,13 @@
 var parser = require('parse-rss');
 var xmlParser = require('xml2json');
 var fs = require('fs');
+var mongoose = require('mongoose');
 
-var rssFileList = ['feedTest', 'feedTest2'];
+var Feed = require('../models/model.js');
+
+// var rssFileList = ['feedTest', 'feedTest2'];
+
+var rssFileList = ['feedTest'];
 
 var indexController = {
 	index: function(req, res) {
@@ -30,22 +35,43 @@ var indexController = {
 		return rssFeedTemp;
 	},
 
-	populateFeeds: function() {
-		var temp = getFeedList(rssFileList);
+	serverStart: function() {
+
+		Feed.find({}).exec(function(error, result) {
+
+			if(error) {
+				console.log('Error finding in dbase');
+			}
+			else {
+
+				if(Object.keys(result).length === 0) {
+
+					var rssDirectoryObjTemp = getFeedList(rssFileList);
+
+					// console.log('rss object: ', rssDirectoryObjTemp);
+
+					var tempRssUrl = rssDirectoryObjTemp.feedTest[0];
+					// console.log('tempRssUrl: ', tempRssUrl);
+					// console.log('rssDirectoryObjTemp keys: ', Object.keys(rssDirectoryObjTemp));
+					// console.log('rssDirectoryObjTemp: ', rssDirectoryObjTemp);
 
 
-		console.log('rss object: ', temp);
+					for(var key in rssDirectoryObjTemp) {
 
-		var tempRssUrl = temp.feedTest[0];
+						var rssUrlListTemp = rssDirectoryObjTemp[key];
+						console.log('key: ', key);
+						console.log('rssUrlListTemp: ', rssUrlListTemp);
+						saveFeedDbase(rssUrlListTemp, key);
 
-		console.log('tempRssUrl: ', tempRssUrl);
+					}
 
-		queryFeed(tempRssUrl);
+
+				}
+			}
+
+		});
 
 	}
-
-
-
 
 };
 
@@ -92,95 +118,103 @@ var FeedTotalObject = function(metaDataObject) {
 
 };
 
-var queryFeed = function(rssUrl) {
+var saveFeedDbase = function(rssUrlList, feedName) {
 
-	var rssData = parser(rssUrl, function(error, result) {
-		if(error) {
-			return null;
-		}
-		else {
-			// console.log('result on the parser read: ', result);
-			var rssData = result;
+	var errorCount = 0;
+	var saveCount = 0;
+	var feedObjectCreatedStatus = false;
 
-			console.log('No error on the feed side!');
+	for(var i=0; i < rssUrlList.length; i++) {
 
-			// console.log('rssData type: ', typeof(rssData));
+		var rssUrlInit = rssUrlList[ i ];
 
-			// console.log('rssData keys: ', Object.keys(rssData));
-			var rssDataFirst = rssData['0'];
+		console.log('rssUrl: ', rssUrlInit);
+		console.log('i: ', i);
 
-			var tempFeedObject = new FeedTotalObject({
-				metaTitle: rssDataFirst.meta.title,
-				metaLink: rssDataFirst.meta.link,
-				metaDate: rssDataFirst.meta.date
-			});
+		(function(i){
 
-			for(var key in Object.keys(rssData)) {
+		var rssUrl = rssUrlList[ i ];
 
-				var rssDataTemp = rssData[key];
+		parser(rssUrl, function(error, result) {
 
-				// console.log('rssDataTemp type: ', typeof(rssDataTemp));
+			console.log('callback ran', i, feedName, rssUrl);
+
+			if(error) {
+				console.log('Error parsing: ', rssUrl);
+			}
+			else {
+				// console.log('result on the parser read: ', result);
+
+				var rssData = result;
+
+				console.log('No error on the feed side: ', rssUrl);
+
+				if(feedObjectCreatedStatus === false) {
+
+					feedObjectCreatedStatus = true;
+					var rssDataFirst = rssData['0'];
+
+					console.log('tripped the wire');
+
+					var tempFeedObject = new Feed({
+						name: feedName,
+						title: rssDataFirst.meta.title,
+						link: rssDataFirst.meta.link,
+						date: rssDataFirst.meta.date
+					});
+
+					console.log('Feed Object created');
+				}
+
+				for(var key in Object.keys(rssData)) {
+
+					var rssDataTemp = rssData[key];
+
+					var rssDataJson = rssDataTemp;
+	
+					var tempEntryObject = new FeedEntry({
+						title: rssDataJson.title,
+						date: rssDataJson.data,
+						pubdate: rssDataJson.pubdate,
+						pubDate: rssDataJson.pubDate,
+						summary: rssDataJson.summary,
+						description: rssDataJson.description,
+						link: rssDataJson.link,
+						tags: rssDataJson.categories,
+						metaTitle: rssDataJson.meta.title,
+						metaDate: rssDataJson.meta.date,
+						metaLink: rssDataJson.meta.link
+					});
 
 
-				// var rssDataJson = xmlParser.toJson(rssDataTemp);
-				var rssDataJson = rssDataTemp;
-				// console.log('rssDataJson: ', rssDataJson);
+					tempFeedObject.addEntry(tempEntryObject);
 
-				// console.log('rssDataJson type: ', typeof(rssDataJson));
-				// console.log('rssDataJson length: ', rssDataJson.length);
-				// console.log('rssDataJson keys: ', Object.keys(rssDataJson));
+				}
 
-				// console.log('rssDataJson title: ', rssDataJson.title);
-				// console.log('rssDataJson date: ', rssDataJson.date);
-				// console.log('rssDataJson pubDate: ', rssDataJson.pubdate);
-				// console.log('rssDataJson pubDate2: ', rssDataJson.pubDate);
-				// console.log('rssDataJson summary: ', rssDataJson.summary);
-				// console.log('rssDataJson description: ', rssDataJson.description);
+				tempFeedObject.info();
 
-				// console.log('rssDataJson link: ', rssDataJson.guid);
-				// console.log('rssDataJson tags: ', rssDataJson.categories);
+				tempFeedObject.save(function(error){
 
+					if(error) {
+						errorCount++;
+						console.log('Error writting to the database. Total Erorrs: ', errorCount);
 
-				var tempEntryObject = new FeedEntry({
-					title: rssDataJson.title,
-					date: rssDataJson.data,
-					pubdate: rssDataJson.pubdate,
-					pubDate: rssDataJson.pubDate,
-					summary: rssDataJson.summary,
-					description: rssDataJson.description,
-					link: rssDataJson.link,
-					tags: rssDataJson.categories,
-					metaTitle: rssDataJson.meta.title,
-					metaDate: rssDataJson.meta.date,
-					metaLink: rssDataJson.meta.link
+					}
+					else {
+						saveCount++;
+						console.log('Object saved. Total saved: ', saveCount);
+
+					}
+
 				});
 
-
-				tempFeedObject.addEntry(tempEntryObject);
-
-				// console.log('rssData meta: ', rssDataJson.meta);
-
-				// console.log('Meta title: ', rssDataJson.meta.title);
-				// console.log('Meta date: ', rssDataJson.meta.date);
-				// console.log('Meta link: ', rssDataJson.meta.link);
-				// console.log('Meta keys: ', Object.keys(rssDataJson.meta));
 			}
 
-			// console.log('tempFeedObject entry 1: ', tempFeedObject.entries[7]);
+		});
 
+	})(i);
 
-			tempFeedObject.info();
-
-			// console.log('tempFeedObject total entries: ', tempFeedObject.entries.length);
-			// console.log('tempFeedObject title: ', tempFeedObject.title);
-			// console.log('tempFeedObject link: ', tempFeedObject.link);
-			// console.log('tempFeedObject date:', tempFeedObject.date);
-			
-			return tempFeedObject;
-		}
-	});
-
-
+	}
 	// console.log('rssData: ', rssData);
 	// return rssData;
 };
@@ -195,7 +229,7 @@ var getFeedList = function(fileList) {
 		var filename = fileList[ i ];
 		var fileOut = fs.readFileSync('./feed_files/' + filename  + '.txt', 'utf8');
 		var fileOutParsed = fileOut.split('\n');
-		console.log('fileOutParsed: ', fileOutParsed);
+		// console.log('fileOutParsed: ', fileOutParsed);
 		var rssFeedUse = fileOutParsed.filter(function(value) {
 			return value !== '';
 		});
@@ -203,8 +237,8 @@ var getFeedList = function(fileList) {
 			rssDirectoryObj[ filename ] = rssFeedUse;
 		});
 		var rssFeedTemp = rssFeedTemp.concat(rssFeedUse);
-		console.log('rssFeedUse: ', rssFeedUse);
-		console.log('rssObject: ', rssDirectoryObj);
+		// console.log('rssFeedUse: ', rssFeedUse);
+		// console.log('rssObject: ', rssDirectoryObj);
 
 	}
 	return rssDirectoryObj;

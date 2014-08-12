@@ -5,7 +5,8 @@
     "express": "4.x",
     "parse-rss": "^1.0.3",
     "twitter": "^0.2.9",
-    "xml2json": "^0.4.0"
+    "xml2json": "^0.4.0",
+    "mongoose": "~3.8.14"
   },
   "name": "Final-RSS-News",
   "version": "0.0.0",
