@@ -78,6 +78,8 @@ var indexController = {
 
 var FeedEntry = function(feedJsonData) {
 
+	this.hashTags = [];
+
 	for(var key in feedJsonData) {
 
 		this[key] = feedJsonData[key];
@@ -96,6 +98,8 @@ var FeedTotalObject = function(metaDataObject) {
 
 	this.addEntry = function(entryObject) {
 		this.entries.push(entryObject);
+
+		console.log('Entry object is being added');
 
 		if(!this.title) {
 			this.title = entryObject.metaTitle;
@@ -147,6 +151,7 @@ var searchTwitterHashtag = function(rssTag, twitterObject) {
 			deferred.resolve( hashTag );
 		}
 		else {
+			console.log('Hashtag not found: ', hashTag);
 			deferred.resolve( '' );
 		}
 	});
@@ -166,9 +171,11 @@ var searchTwitterTag = function(rssTag, twitterObject) {
 	twitterObject.get('search/tweets', {q:hashTag, count:1}, function(error, data, res) {
 		if(data.search_metadata.count > 0) {
 			console.log('Hashtag found: ', hashTag);
+			return hashTag;
 		}
 		else {
 			console.log('Hashtag not found: ', hashTag);
+			return '';
 		}
 	});
 };
@@ -228,12 +235,12 @@ var queryFeed = function(rssUrl) {
 
 var queryAllFeeds = function(rssList, fileName) {
 
-	var Twitter = new Twit({
-		consumer_key: CUSTOMER_KEY,
-		consumer_secret: CUSTOMER_SECRET,
-		access_token: ACCESS_TOKEN,
-		access_token_secret: ACCESS_SECRET
-	});
+	// var Twitter = new Twit({
+	// 	consumer_key: CUSTOMER_KEY,
+	// 	consumer_secret: CUSTOMER_SECRET,
+	// 	access_token: ACCESS_TOKEN,
+	// 	access_token_secret: ACCESS_SECRET
+	// });
 
 	var promisesArray = [];
 
@@ -244,19 +251,27 @@ var queryAllFeeds = function(rssList, fileName) {
 
 	}
 
+	// var promisesArray = rssList.forEach(function(rssUrl) {
+	// 	return queryFeed(rssUrl);
+	// });
+
 	// Q.all([queryFeed(tempRSS), queryFeed(tempRSS2)]).spread(function(val1, val2) {
 
-	Q.all( promisesArray ).spread(function(feed1) {
+	Q.all( promisesArray ).then(function(feedsArray) {
 
-		console.log('\nNumber of feeds found: ', arguments.length);
+		console.log('\nNumber of feeds found: ', feedsArray.length);
 		console.log('fileName: ', fileName);
 
 		var masterFeedSaveList = [];
 		var feedObjectCreatedStatus = false;
+		var TwitterObject = createTwitterObject();
 
 
-		for(var i=0; i < arguments.length; i++) {
-			var tempFeedObjectRaw = arguments[ i ];
+
+		for(var i=0; i < feedsArray.length; i++) {
+			var tempFeedObjectRaw = feedsArray[ i ];
+
+			// console.log('tempFeedObjectRaw: ', tempFeedObjectRaw);
 
 			var tempIValue = i + 1;
 			// console.log('\nvalue' + tempIValue + ' entries: ', Object.keys(tempFeedObjectRaw).length);			
@@ -282,6 +297,12 @@ var queryAllFeeds = function(rssList, fileName) {
 
 				// console.log('Tag array: ', rssCategoryArray);
 
+				var promiseArray = [];
+
+				for(var j=0; j < rssCategoryArray.length; j++) {
+					promiseArray.push( searchTwitterHashtag( rssCategoryArray[ j ], TwitterObject ) );
+				}
+
 				var tempEntryObject = new FeedEntry({
 					title: rssDataJson.title,
 					date: rssDataJson.data,
@@ -293,32 +314,137 @@ var queryAllFeeds = function(rssList, fileName) {
 					tags: rssCategoryArray,
 					metaTitle: rssDataJson.meta.title,
 					metaDate: rssDataJson.meta.date,
-					metaLink: rssDataJson.meta.link
+					metaLink: rssDataJson.meta.link,
 				});
 
-				tempFeedObject.addEntry(tempEntryObject);
+				Q.all( promiseArray ).then(function(hashTagResults) {
+
+					var tempHashTagArray = [];
+
+					console.log('hashTagResults: ', hashTagResults);
+
+					for(var key in hashTagResults) {
+
+						var hashTagValue = hashTagResults[key];
+						console.log('hashTagValue: ', hashTagValue);
+						tempHashTagArray.push(hashTagValue)
+					}
+
+					console.log('hashtag array: ', tempHashTagArray);
+
+					tempEntryObject.hashTags = tempHashTagArray;
+
+					tempFeedObject.addEntry(tempEntryObject);
+
+				}).done();
+			
 
 				// tempFeedObject.info();
 
 			}
+
+			
+
 
 			masterFeedSaveList.push(tempFeedObject);
 			console.log('tempFeedObject entries: ', tempFeedObject.entries.length);
 
 		}
 
+		var tempFeedObject = masterFeedSaveList[0];
+		console.log('Section: ', tempFeedObject.section);
+		console.log('Title: ', tempFeedObject.title);
+		console.log('masterFeedSaveList length: ', masterFeedSaveList.length);
+		console.log('tempFeedObject number of entries: ', tempFeedObject.entries.length);
+
+		// 
+
+		// var TwitterObject = createTwitterObject();
+
+		// var tempMasterFeedSaveList = [];
+
+		// for(var i=0; i < masterFeedSaveList.length; i++) {
+
+		// 	var tempFeedObject = masterFeedSaveList[ i ];
+
+		// 	var tempEntryObject = tempFeedObject.entries.map(function(EntryObject) {
+				
+		// 		var promiseArray = [];
+
+		// 		for(var j=0; j < EntryObject.tags.length; j++) {
+		// 			promiseArray.push( searchTwitterHashtag( EntryObject.tags[ j ], TwitterObject ) );
+		// 		}
+
+		// 		Q.all( promiseArray ).spread(function(hashTagResults) {
+
+		// 			var tempHashTagArray = [];
+
+		// 			for(var key in arguments) {
+		// 				var hashTagValue = arguments.key;
+		// 				tempHashTagArray.push(hashTagValue)
+		// 			}
+
+		// 			EntryObject.hashTags = tempHashTagArray;
+
+		// 		}).done();
+
+		// 		return EntryObject;
+
+		// 	});
+
+		// 	tempFeedObject.addEntry( tempEntryObject );
+
+		// 	tempMasterFeedSaveList.push(tempFeedObject);
+
+		// };
+
+		console.log('Length of masterFeedSaveList: ', masterFeedSaveList.length);
+
+		// console.log('Length of tempMasterFeedSaveList: ', tempMasterFeedSaveList.length);
+
+		// var masterFeedSaveList = tempMasterFeedSaveList;
+
+		// for(var i=0; i < masterFeedSaveList.length; i++) {
+		// 	var tempFeedObject = masterFeedSaveList[ i ];
+
+		// 	console.log('In the first loop hashtags');
+
+		// 	for(var j=0; j < tempFeedObject.entries.length; i++) {
+
+		// 		console.log('In the second loop hashtags');
+		// 		var tempEntryObject = tempFeedObject.entries[ j ];
+		// 		var entriesPromisesArray = [];
+
+		// 		for(var k=0; k < tempEntryObject.tags.length; k++) {
+
+		// 			console.log('In the third loop hashtags');
+
+		// 			entriesPromisesArray.push( searchTwitterHashtag(tempEntryObject.tags[ k ]), TwitterObject );
+
+		// 			Q.all( entriesPromisesArray ).spread(function(hashTagResults) {
+		// 				tempEntryObject.hashTags = hashTagResults;
+		// 			}).done();
+		// 		}
+
+		// 	}
+
+		// }
+
+
 		var saveObjectPromisesArray = [];
+
+		console.log('At the save point');
 
 		for(var i=0; i < masterFeedSaveList.length; i++) {
 			saveObjectPromisesArray.push( saveObjectDBase(masterFeedSaveList[ i ]) );
 		}
 
-		Q.all( saveObjectPromisesArray ).spread(function(saveResult) {
+		Q.all( saveObjectPromisesArray ).then(function(saveResult) {
 
 			var saveCounter = 0;
 
-			for(var i=0; i < arguments.length; i++) {
-				var saveStatus = arguments[ i ];
+			for(var i=0; i < saveResult.length; i++) {
+				var saveStatus = saveResult[ i ];
 				saveCounter += saveStatus;
 			}
 
@@ -336,7 +462,18 @@ var queryAllFeeds = function(rssList, fileName) {
 
 };
 
+var turnTagsToHashTags = function(tempFeedObject) {
 
+	var tempFeedObjectEntries = tempFeedObject.entries;
+
+	for(var i=0; i < tempFeedObjectEntries.length; i++) {
+
+
+
+	}
+
+
+};
 
 var convertRssTagHashtag = function(rssTag) {
 

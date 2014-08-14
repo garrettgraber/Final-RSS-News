@@ -81,7 +81,7 @@ stream.on('tweet', function (tweet) {
 	console.log(Object.keys(tweet));
 });
 
-var foo3 = function(rssTag) {
+var convertRssTagHashtag = function(rssTag) {
 
 	var rssEdited = '';
 	var rssParens = rssTag.indexOf('(');

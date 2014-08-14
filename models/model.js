@@ -7,24 +7,27 @@ var FeedSchema = mongoose.Schema({
 	title: String,
 	link: String,
 	date: String,
-	entries: []
+	entries: [],
 
+	
 });
 
 
 FeedSchema.methods.addEntry = function(entryObject) {
 
+	console.log('Entry object is being added');
+
 	this.entries.push(entryObject);
 
-	// if(!this.title) {
-	// 	this.title = entryObject.metaTitle;
-	// }
-	// if(!this.link) {
-	// 	this.link = entryObject.metaLink;
-	// }
-	// if(!this.date) {
-	// 	this.date = entryObject.metaDate;
-	// }
+	if(!this.title) {
+		this.title = entryObject.metaTitle;
+	}
+	if(!this.link) {
+		this.link = entryObject.metaLink;
+	}
+	if(!this.date) {
+		this.date = entryObject.metaDate;
+	}
 };
 
 FeedSchema.methods.info = function() {
