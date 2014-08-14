@@ -279,7 +279,7 @@ var queryAllFeeds = function(rssList, fileName) {
 				var rssDataJson = tempFeedObjectRaw[keyEntry];
 
 				var rssCategoryArray = rssDataJson.categories;
-				
+
 				// console.log('Tag array: ', rssCategoryArray);
 
 				var tempEntryObject = new FeedEntry({
@@ -326,7 +326,7 @@ var queryAllFeeds = function(rssList, fileName) {
 
 			(masterFeedSaveList.length === saveCounter) ? console.log('All feeds stored for this section: ', fileName) : console.log('Problem storing feeds stored for this section: ', fileName);
 
-		}).dome();
+		}).done();
 
 		console.log('queryFeed has worked');
 
