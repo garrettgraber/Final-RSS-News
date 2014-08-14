@@ -4,11 +4,14 @@
     "body-parser": "1.x",
     "express": "4.x",
     "parse-rss": "^1.0.3",
-    "twitter": "^0.2.9",
+    "twitter": "~0.2.9",
     "xml2json": "^0.4.0",
     "mongoose": "~3.8.14",
     "rssparser": "0.0.9",
-    "q": "~1.0.1"
+    "q": "~1.0.1",
+    "util": "~0.10.3",
+    "twit": "~1.1.18",
+    "twitter-api": "~1.0.4"
   },
   "name": "Final-RSS-News",
   "version": "0.0.0",

@@ -4,6 +4,7 @@ var xmlParser = require('xml2json');
 var fs = require('fs');
 var mongoose = require('mongoose');
 var Q = require('q');
+var Twit = require('twit');
 
 
 var Feed = require('../models/model.js');
@@ -11,6 +12,11 @@ var Feed = require('../models/model.js');
 // var rssFileList = ['feedTest', 'feedTest2'];
 
 var rssFileList = ['feedTest', 'feedTest2'];
+
+var CUSTOMER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
+var CUSTOMER_SECRET = 'Y30LpiAdtq4cT2Ubvt4xrd5Kno34gGr9Jnary9wQcdxd2nnGgO';
+var ACCESS_TOKEN = '2565195049-8iLsJY5PmaSWkZDVoMjXuoGZhBub0YUiiDgH7XY';
+var ACCESS_SECRET = 'QbJlCawyvg1XBgs8RDndXOiSxadaQpALkMuYl9jbQRYuZ';
 
 var indexController = {
 	index: function(req, res) {
@@ -37,45 +43,7 @@ var indexController = {
 		return rssFeedTemp;
 	},
 
-	serverStart: function() {
-
-		Feed.find({}).exec(function(error, result) {
-
-			if(error) {
-				console.log('Error finding in dbase');
-			}
-			else {
-
-				if(Object.keys(result).length === 0) {
-
-					var rssDirectoryObjTemp = getFeedList(rssFileList);
-
-					// console.log('rss object: ', rssDirectoryObjTemp);
-
-					var tempRssUrl = rssDirectoryObjTemp.feedTest[0];
-					// console.log('tempRssUrl: ', tempRssUrl);
-					// console.log('rssDirectoryObjTemp keys: ', Object.keys(rssDirectoryObjTemp));
-					// console.log('rssDirectoryObjTemp: ', rssDirectoryObjTemp);
-
-
-					for(var key in rssDirectoryObjTemp) {
-
-						var rssUrlListTemp = rssDirectoryObjTemp[key];
-						console.log('key: ', key);
-						console.log('rssUrlListTemp: ', rssUrlListTemp);
-						saveFeedDbase(rssUrlListTemp, key);
-
-					}
-
-
-				}
-			}
-
-		});
-
-	},
-
-	serverStartTest: function() {
+	queryAndStoreFeeds: function() {
 
 		Feed.find({}).exec(function(error, result) {
 
@@ -150,108 +118,122 @@ var FeedTotalObject = function(metaDataObject) {
 
 };
 
-var saveFeedDbase = function(rssUrlList, feedName) {
+var createTwitterObject = function() {
 
-	var errorCount = 0;
-	var saveCount = 0;
-	var feedObjectCreatedStatus = false;
+	var Twitter = new Twit({
+		consumer_key: CUSTOMER_KEY,
+		consumer_secret: CUSTOMER_SECRET,
+		access_token: ACCESS_TOKEN,
+		access_token_secret: ACCESS_SECRET
+	});
 
-	for(var i=0; i < rssUrlList.length; i++) {
+	return Twitter;
+};
 
-		var rssUrlInit = rssUrlList[ i ];
+//Specifically made to be used with promises. Use them now before it is too late.
+var searchTwitterHashtag = function(rssTag, twitterObject) {
 
-		console.log('rssUrl: ', rssUrlInit);
-		console.log('i: ', i);
+	console.log('Searching twitter...');
 
-		(function(i){
+	var hashTag = convertRssTagHashtag(rssTag);
 
-		var rssUrl = rssUrlList[ i ];
+	console.log('Converted hashtag: ', hashTag);
 
-		parser(rssUrl, function(error, result) {
-
-			console.log('callback ran', i, feedName, rssUrl);
-
-			if(error) {
-				console.log('Error parsing: ', rssUrl);
-			}
-			else {
-				// console.log('result on the parser read: ', result);
-
-				var rssData = result;
-
-				console.log('No error on the feed side: ', rssUrl);
-
-				if(feedObjectCreatedStatus === false) {
-
-					feedObjectCreatedStatus = true;
-					var rssDataFirst = rssData['0'];
-
-					console.log('tripped the wire');
-
-					var tempFeedObject = new Feed({
-						name: feedName,
-						title: rssDataFirst.meta.title,
-						link: rssDataFirst.meta.link,
-						date: rssDataFirst.meta.date
-					});
-
-					console.log('Feed Object created');
-				}
-
-				for(var key in Object.keys(rssData)) {
-
-					var rssDataTemp = rssData[key];
-
-					var rssDataJson = rssDataTemp;
+	var deferred = Q.defer();
 	
-					var tempEntryObject = new FeedEntry({
-						title: rssDataJson.title,
-						date: rssDataJson.data,
-						pubdate: rssDataJson.pubdate,
-						pubDate: rssDataJson.pubDate,
-						summary: rssDataJson.summary,
-						description: rssDataJson.description,
-						link: rssDataJson.link,
-						tags: rssDataJson.categories,
-						metaTitle: rssDataJson.meta.title,
-						metaDate: rssDataJson.meta.date,
-						metaLink: rssDataJson.meta.link
-					});
+	twitterObject.get('search/tweets', {q:hashTag, count:1}, function(error, data, res) {
+		if(data.search_metadata.count > 0) {
+			console.log('Hashtag found: ', hashTag);
+			deferred.resolve( hashTag );
+		}
+		else {
+			deferred.resolve( '' );
+		}
+	});
 
+	return deferred.promise;
 
-					tempFeedObject.addEntry(tempEntryObject);
+};
 
-				}
+var searchTwitterTag = function(rssTag, twitterObject) {
 
-				tempFeedObject.info();
+	console.log('Searching twitter...');
 
-				tempFeedObject.save(function(error){
+	var hashTag = convertRssTagHashtag(rssTag);
 
-					if(error) {
-						errorCount++;
-						console.log('Error writting to the database. Total Erorrs: ', errorCount);
+	console.log('Converted hashtag: ', hashTag);
+	
+	twitterObject.get('search/tweets', {q:hashTag, count:1}, function(error, data, res) {
+		if(data.search_metadata.count > 0) {
+			console.log('Hashtag found: ', hashTag);
+		}
+		else {
+			console.log('Hashtag not found: ', hashTag);
+		}
+	});
+};
 
-					}
-					else {
-						saveCount++;
-						console.log('Object saved. Total saved: ', saveCount);
+var foo = function(rssTagArray) {
 
-					}
+	var TwitterObject = createTwitterObject();
 
-				});
-
-			}
-
-		});
-
-	})(i);
-
+	for(var i=0; i < rssTagArray.length; i++) {
+		searchTwitterTag(rssTagArray[ i ], TwitterObject);
 	}
-	// console.log('rssData: ', rssData);
-	// return rssData;
+};
+
+
+//inObject needs to be an object with mongoose schema. Is specifically built for promises!
+var saveObjectDBase = function(inObject) {
+
+	var deferred = Q.defer();
+
+	inObject.save(function(error){
+
+		if(error) {
+			deferred.resolve(0);
+		}
+		else {
+			deferred.resolve(1);
+		}
+
+	});
+	return deferred.promise;
+
+};
+
+//Specifically made to use promises. Go async mother fuckers, while there is still time.
+var queryFeed = function(rssUrl) {
+
+	var deferred = Q.defer();
+	console.log('queryFeed has fired');
+
+
+	parser(rssUrl, function(error, result) {
+
+		if(error) {
+			console.log('bad rss parse');
+			// deferred.reject(new Error(error));
+			deferred.resolve({});
+		}
+		else {
+			// console.log('result: ', result);
+			console.log('good rss parse');
+			deferred.resolve(result);
+		}
+
+	});
+	return deferred.promise;
 };
 
 var queryAllFeeds = function(rssList, fileName) {
+
+	var Twitter = new Twit({
+		consumer_key: CUSTOMER_KEY,
+		consumer_secret: CUSTOMER_SECRET,
+		access_token: ACCESS_TOKEN,
+		access_token_secret: ACCESS_SECRET
+	});
 
 	var promisesArray = [];
 
@@ -277,40 +259,28 @@ var queryAllFeeds = function(rssList, fileName) {
 			var tempFeedObjectRaw = arguments[ i ];
 
 			var tempIValue = i + 1;
-			console.log('\nvalue' + tempIValue + ' entries: ', Object.keys(tempFeedObjectRaw).length);			
-
-
-
-			// console.log('tempFeedObjectRaw keys: ', Object.keys(tempFeedObjectRaw));
-			// console.log('Feed title: ', tempFeedObjectRaw.title);
-
+			// console.log('\nvalue' + tempIValue + ' entries: ', Object.keys(tempFeedObjectRaw).length);			
 			var tempFeedObjectRawFirst = tempFeedObjectRaw['0'];
-
-			// console.log('tempFeedObjectRawFirst: ', tempFeedObjectRawFirst);
-
-			console.log('tripped the wire');
 			console.log('title: ', tempFeedObjectRawFirst.meta.title);
 			console.log('link: ', tempFeedObjectRawFirst.meta.link);
 			console.log('date: ', tempFeedObjectRawFirst.meta.date);
 
 			var tempFeedObject = new Feed({
-				name: fileName,
+				section: fileName,
 				title: tempFeedObjectRawFirst.meta.title,
 				link: tempFeedObjectRawFirst.meta.link,
 				date: tempFeedObjectRawFirst.meta.date
 			});
 
 			console.log('Feed Object created');
-		
-
 	
-			// var tempFeedObject = createFeedObject(tempFeedObjectRaw, fileName);
+			for(var keyEntry in tempFeedObjectRaw) {
 
-			// console.log('tempFeedObject:', tempFeedObject);
+				var rssDataJson = tempFeedObjectRaw[keyEntry];
 
-			for(var key in tempFeedObjectRaw) {
-
-				var rssDataJson = tempFeedObjectRaw[key];
+				var rssCategoryArray = rssDataJson.categories;
+				
+				// console.log('Tag array: ', rssCategoryArray);
 
 				var tempEntryObject = new FeedEntry({
 					title: rssDataJson.title,
@@ -320,16 +290,15 @@ var queryAllFeeds = function(rssList, fileName) {
 					summary: rssDataJson.summary,
 					description: rssDataJson.description,
 					link: rssDataJson.guid,
-					tags: rssDataJson.categories,
+					tags: rssCategoryArray,
 					metaTitle: rssDataJson.meta.title,
 					metaDate: rssDataJson.meta.date,
 					metaLink: rssDataJson.meta.link
 				});
 
-
 				tempFeedObject.addEntry(tempEntryObject);
-				// tempFeedObject.info();
 
+				// tempFeedObject.info();
 
 			}
 
@@ -338,33 +307,61 @@ var queryAllFeeds = function(rssList, fileName) {
 
 		}
 
+		var saveObjectPromisesArray = [];
+
+		for(var i=0; i < masterFeedSaveList.length; i++) {
+			saveObjectPromisesArray.push( saveObjectDBase(masterFeedSaveList[ i ]) );
+		}
+
+		Q.all( saveObjectPromisesArray ).spread(function(saveResult) {
+
+			var saveCounter = 0;
+
+			for(var i=0; i < arguments.length; i++) {
+				var saveStatus = arguments[ i ];
+				saveCounter += saveStatus;
+			}
+
+			console.log('Number saved: ', saveCounter);
+
+			(masterFeedSaveList.length === saveCounter) ? console.log('All feeds stored for this section: ', fileName) : console.log('Problem storing feeds stored for this section: ', fileName);
+
+		}).dome();
+
 		console.log('queryFeed has worked');
-		console.log('masterFeedSaveList length: ', masterFeedSaveList.length);
+
 	}).done();
+	
+
 
 };
 
-var queryFeed = function(rssUrl) {
-
-	var deferred = Q.defer();
-	console.log('queryFeed has fired');
 
 
-	parser(rssUrl, function(error, result) {
+var convertRssTagHashtag = function(rssTag) {
 
-		if(error) {
-			console.log('bad rss parse');
-			// deferred.reject(new Error(error));
-			deferred.resolve({});
-		}
-		else {
-			// console.log('result: ', result);
-			console.log('good rss parse');
-			deferred.resolve(result);
-		}
+	var rssEdited = '';
+	var rssParens = rssTag.indexOf('(');
 
+	if(rssTag.indexOf('(') > -1) {
+		rssEdited = rssTag.slice(0, rssParens);
+	}
+	else {
+		rssEdited = rssTag;
+	}
+
+	var rssTagArray = rssEdited.split(' ');
+
+	var rssTagArray = rssTagArray.filter(function(element) {
+		return element !== '';
 	});
-	return deferred.promise;
+
+	var rssTagFinal = rssTagArray.join('');
+	var rssTagFinal = rssTagFinal.toLowerCase();
+	var rssTagFinal = '#' + rssTagFinal;
+
+	return rssTagFinal;
+
 };
 
 var createFeedObject = function(feedObjectRaw, fileName) {
@@ -372,7 +369,7 @@ var createFeedObject = function(feedObjectRaw, fileName) {
 	console.log('createFeedObject function has fired');
 	var rssDataFirst = feedObjectRaw['0'];
 	var tempFeedObject = new Feed({
-		name: feedName,
+		section: feedName,
 		title: rssDataFirst.meta.title,
 		link: rssDataFirst.meta.link,
 		date: rssDataFirst.meta.date

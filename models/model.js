@@ -3,7 +3,7 @@ var mongoose = require('mongoose');
 
 var FeedSchema = mongoose.Schema({
 
-	name: String,
+	section: String,
 	title: String,
 	link: String,
 	date: String,

@@ -1,12 +1,9 @@
 
 
 var parser = require('parse-rss');
-
 var parser2 = require('rssparser');
-
 var Q = require('q');
-
-
+var twitter = require('twitter');
 var fs = require('fs');
 var async = require('async');
 
@@ -15,6 +12,131 @@ var rssFeedList = [];
 var rssFeedListFinal = [];
 var seriesTest = [];
 var rssFeed = '';
+
+var CUSTOMER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
+var CUSTOMER_SECRET = 'Y30LpiAdtq4cT2Ubvt4xrd5Kno34gGr9Jnary9wQcdxd2nnGgO';
+var ACCESS_TOKEN = '2565195049-8iLsJY5PmaSWkZDVoMjXuoGZhBub0YUiiDgH7XY';
+var ACCESS_SECRET = 'QbJlCawyvg1XBgs8RDndXOiSxadaQpALkMuYl9jbQRYuZ';
+
+
+var foo = function() {
+
+
+	var twit = new twitter({
+		consumer_key: TWITTER_KEY,
+		consumer_secret: TWITTER_SECRET,
+		access_token_key: ACCESS_TOKEN,
+		access_token_secret: ACCESS_SECRET
+	});
+
+	return twit;
+};
+
+
+client.setAuth(
+	TWITTER_KEY,
+	TWITTER_SECRET,
+	TWITTER_KEY,
+	TWITTER_SECRET
+);
+
+// var stream = twit.stream('statuses/filter', {'track': ['#node']});
+
+// stream.on('tweet', function (tweet) {
+//     console.log(tweet);
+// });
+
+
+
+var TWITTER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
+var TWITTER_SECRET = 'Y30LpiAdtq4cT2Ubvt4xrd5Kno34gGr9Jnary9wQcdxd2nnGgO';
+
+var Twit = require('twit');
+
+var Twitter = new Twit({
+	consumer_key: CUSTOMER_KEY,
+	consumer_secret: CUSTOMER_SECRET,
+	access_token: ACCESS_TOKEN,
+	access_token_secret: ACCESS_SECRET
+});
+
+var hashtagTemp = '#isis';
+
+Twitter.get('search/tweets', {q:hashtagTemp, count:1}, function(error, data, res) {
+	console.log('data: ', data);
+	console.log('Number found: ', data.search_metadata.count); 
+	// console.log('response: ', res);
+	// console.log('data keys: ', Object.keys(data));
+	console.log('response keys: ', Object.keys(res));
+	console.log('response url: ', res.url);
+	if(data.search_metadata.count > 0) {
+		console.log('Hashtag: ' + hashtagTemp + ' found.');
+	}
+});
+
+var stream = Twitter.stream('statuses/filter', {track: '#node', language: 'en'});
+
+stream.on('tweet', function (tweet) {
+	// console.log(tweet);
+	console.log(Object.keys(tweet));
+});
+
+var foo3 = function(rssTag) {
+
+	var rssEdited = '';
+	var rssParens = rssTag.indexOf('(');
+
+	if(rssTag.indexOf('(') > -1) {
+		rssEdited = rssTag.slice(0, rssParens);
+	}
+	else {
+		rssEdited = rssTag;
+	}
+
+	var rssTagArray = rssEdited.split(' ');
+
+	var rssTagArray = rssTagArray.filter(function(element) {
+		return element !== '';
+	});
+
+	var rssTagFinal = rssTagArray.join('');
+	var rssTagFinal = rssTagFinal.toLowerCase();
+	var rssTagFinal = '#' + rssTagFinal;
+
+	return rssTagFinal;
+
+};
+
+var foo2 = function(rssUrl) {
+
+	parser(rssUrl, function(error, result) {
+
+		if(error) {
+			console.log('bad rss parse');
+			// deferred.reject(new Error(error));
+			deferred.resolve({});
+		}
+		else {
+			// console.log('result: ', result);
+			console.log('good rss parse');
+			var tempEntry = result['0'];
+			console.log('rss keys: ', Object.keys(result['0']));
+
+			console.log('rss categories: ', tempEntry['rss:category']);
+
+			for(var i=0; i < tempEntry.categories; i++) {
+
+			}
+
+			console.log('rss categories again: ', tempEntry['categories']);
+
+			// console.log('rss categories: ', result.categories);
+			// console.log('rss categories objects: ');
+
+		}
+
+	});
+};
 
 var queryFeedlist = function(feedList) {
 
@@ -210,6 +332,7 @@ var rssList = [
 	'http://www.spiegel.de/international/europe/index.rss',
 	'http://www.forbes.com/europe_news/index.xml',
 	'http://www.washingtonpost.com/wp-dyn/rss/world/europe/index.xml'
+
 	];
 
 var rssList = rssList.concat([tempRSS, tempRSS2]);
@@ -247,4 +370,4 @@ Q.all( promisesArray ).spread(function(feed1) {
 	console.log('queryFeed has worked');
 }).done();
 
-
+module.exports = foo;

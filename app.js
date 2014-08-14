@@ -12,9 +12,7 @@ app.set('views', __dirname + '/views');
 app.use(express.static(__dirname + '/public'));
 app.use(bodyParser.urlencoded({extended: false}));
 
-
-indexController.serverStartTest();
-
+indexController.queryAndStoreFeeds();
 
 app.get('/', indexController.index);
 
