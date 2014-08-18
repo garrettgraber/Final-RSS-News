@@ -7,15 +7,15 @@ var FeedSchema = mongoose.Schema({
 	title: String,
 	link: String,
 	date: String,
-	entries: [],
+	tagStatus: Boolean,
+	entries: []
 
-	
 });
 
 
 FeedSchema.methods.addEntry = function(entryObject) {
 
-	console.log('Entry object is being added');
+	// console.log('Entry object is being added');
 
 	this.entries.push(entryObject);
 
