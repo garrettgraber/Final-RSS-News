@@ -1,0 +1,5 @@
+http://rss.cnn.com/rss/edition_meast.rss
+http://feeds.bbci.co.uk/news/world/middle_east/rss.xml
+http://www.huffingtonpost.com/tag/middle-east/feed
+http://www.latimes.com/world/middleeast/rss2.0.xml
+

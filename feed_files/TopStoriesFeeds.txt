@@ -1,0 +1,5 @@
+http://rss.cnn.com/rss/edition.rss
+http://www.forbes.com/real-time/feed2/
+http://feeds.reuters.com/reuters/topNews
+http://hosted2.ap.org/atom/APDEFAULT/3d281c11a96b4ad082fe88aa0db04305
+http://www.cnbc.com/id/100003114/device/rss/rss.html

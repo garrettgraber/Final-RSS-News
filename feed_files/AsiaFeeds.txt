@@ -1,0 +1,5 @@
+http://rss.cnn.com/rss/edition_asia.rss
+http://feeds.bbci.co.uk/news/world/asia/rss.xml
+http://www.huffingtonpost.com/tag/asia/feed
+http://www.latimes.com/world/asia/rss2.0.xml
+http://www.cnbc.com/id/19832390/device/rss/rss.html

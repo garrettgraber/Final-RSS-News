@@ -6,12 +6,25 @@ var mongoose = require('mongoose');
 var Q = require('q');
 var Twit = require('twit');
 
+var badRSSList = [];
+var masterSaveCounter = 0;
+
 
 var Feed = require('../models/model.js');
 
 // var rssFileList = ['feedTest', 'feedTest2'];
 
-var rssFileList = ['feedTest', 'feedTest2'];
+// var rssFileList = ['feedTest', 'feedTest2'];
+
+var rssFileList = [ 
+	'EuropeFeeds',
+	'AfricaFeeds',
+	'MiddleEastFeeds',
+	'AsiaFeeds',
+	'WorldFeeds',
+	'TopStoriesFeeds',
+	'USFeeds'
+];
 
 var CUSTOMER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
 var CUSTOMER_SECRET = 'Y30LpiAdtq4cT2Ubvt4xrd5Kno34gGr9Jnary9wQcdxd2nnGgO';
@@ -257,13 +270,15 @@ var queryFeed = function(rssUrl) {
 	parser(rssUrl, function(error, result) {
 
 		if(error) {
-			console.log('bad rss parse');
+			console.log('bad rss parse: ', rssUrl);
+
+			badRSSList.push(rssUrl);
 			// deferred.reject(new Error(error));
 			deferred.resolve({});
 		}
 		else {
 			// console.log('result: ', result);
-			console.log('good rss parse');
+			console.log('good rss parse:', rssUrl);
 			deferred.resolve(result);
 		}
 
@@ -316,101 +331,115 @@ var queryAllFeeds = function(rssList, fileName) {
 
 			console.log('Feed Object created');
 	
+			var entryCounter = 0;
+
 			for(var keyEntry in tempFeedObjectRaw) {
 
-				var rssDataJson = tempFeedObjectRaw[keyEntry];
-				var rssCategoryArray = rssDataJson.categories;
+				entryCounter++;
 
-				if(rssCategoryArray.length > 0) {
+				if(entryCounter < 21) {
 
-					tempFeedObject.tagStatus = true;
+					var rssDataJson = tempFeedObjectRaw[keyEntry];
+					var rssCategoryArray = rssDataJson.categories;
 
-					var tempTagArray = [];
+					if(rssCategoryArray.length > 0) {
 
-					for(var tempKey in rssCategoryArray) {
-						var tempTag = rssCategoryArray[tempKey];
-						tempTagArray.push(tempTag);
+						tempFeedObject.tagStatus = true;
+
+						var tempTagArray = [];
+
+						for(var tempKey in rssCategoryArray) {
+							var tempTag = rssCategoryArray[tempKey];
+							tempTagArray.push(tempTag);
+						}
+
 					}
+
+					else {
+
+						tempTagArray = [];
+					}
+
+					// console.log('tag keys: ', Object.keys(rssCategoryArray));
+
+					// console.log('tag keys: ', tempTagArray );
+
+
+
+
+					// var promiseArray = [];
+
+					// for(var j=0; j < rssCategoryArray.length; j++) {
+					// 	promiseArray.push( searchTwitterHashtag( rssCategoryArray[ j ], TwitterObject ) );
+					// }
+
+					var summaryUseIndex = rssDataJson.summary.indexOf('<');
+					var summaryUse = rssDataJson.summary.slice(0, summaryUseIndex);
+
+					var descriptionUseIndex = rssDataJson.summary.indexOf('<');
+					var descriptionUse = rssDataJson.description.slice(0, descriptionUseIndex);
+
+					var currentIndex = tempFeedObject.entries.length;
+
+					var tempEntryObject = new FeedEntry({
+						title: rssDataJson.title,
+						date: rssDataJson.data,
+						pubdate: rssDataJson.pubdate,
+						pubDate: rssDataJson.pubDate,
+						summary: summaryUse,
+						description: descriptionUse,
+						link: rssDataJson.guid,
+						tags: tempTagArray,
+						entryNumber: currentIndex,
+						metaTitle: rssDataJson.meta.title,
+						metaDate: rssDataJson.meta.date,
+						metaLink: rssDataJson.meta.link,
+					});
+
+					tempFeedObject.addEntry(tempEntryObject);
+
+					// if(rssCategoryArray.length > 0) {
+
+					// 	var promiseTwitter = Q.allSettled( promiseArray );
+
+					// 	var promiseKeys = promiseTwitter.keys();
+					// 	// console.log('Promise keys: ', promiseKeys);
+
+					// 	promiseTwitter.then(function(hashTagResults) {
+
+					// 		var tempHashTagArray = [];
+
+					// 		console.log('hashTagResults: ', hashTagResults);
+
+					// 		for(var i=0; i <  hashTagResults.length; i++) {
+
+					// 			var hashTagObject = hashTagResults[ i ];
+					// 			var hashTagValue = hashTagObject.value;
+					// 			console.log('hashTagValue: ', hashTagValue);
+					// 			tempHashTagArray.push(hashTagValue);
+					// 		}
+
+					// 		console.log('hashtag array: ', tempHashTagArray);
+
+					// 		tempEntryObject.hashTags = tempHashTagArray;
+
+					// 		tempFeedObject.addEntry(tempEntryObject);
+
+					// 	}).done();
+					
+					// }
+
+					// else {
+					// 	tempFeedObject.addEntry(tempEntryObject);
+					// }
 
 				}
 
 				else {
 
-					tempTagArray = [];
+					console.log('breaking the loop');
+					break;
 				}
-
-				// console.log('tag keys: ', Object.keys(rssCategoryArray));
-
-				// console.log('tag keys: ', tempTagArray );
-
-
-
-
-				// var promiseArray = [];
-
-				// for(var j=0; j < rssCategoryArray.length; j++) {
-				// 	promiseArray.push( searchTwitterHashtag( rssCategoryArray[ j ], TwitterObject ) );
-				// }
-
-				var summaryUseIndex = rssDataJson.summary.indexOf('<');
-				var summaryUse = rssDataJson.summary.slice(0, summaryUseIndex);
-
-				var descriptionUseIndex = rssDataJson.summary.indexOf('<');
-				var descriptionUse = rssDataJson.description.slice(0, descriptionUseIndex);
-
-				var currentIndex = tempFeedObject.entries.length;
-
-				var tempEntryObject = new FeedEntry({
-					title: rssDataJson.title,
-					date: rssDataJson.data,
-					pubdate: rssDataJson.pubdate,
-					pubDate: rssDataJson.pubDate,
-					summary: summaryUse,
-					description: descriptionUse,
-					link: rssDataJson.guid,
-					tags: tempTagArray,
-					entryNumber: currentIndex,
-					metaTitle: rssDataJson.meta.title,
-					metaDate: rssDataJson.meta.date,
-					metaLink: rssDataJson.meta.link,
-				});
-
-				tempFeedObject.addEntry(tempEntryObject);
-
-				// if(rssCategoryArray.length > 0) {
-
-				// 	var promiseTwitter = Q.allSettled( promiseArray );
-
-				// 	var promiseKeys = promiseTwitter.keys();
-				// 	// console.log('Promise keys: ', promiseKeys);
-
-				// 	promiseTwitter.then(function(hashTagResults) {
-
-				// 		var tempHashTagArray = [];
-
-				// 		console.log('hashTagResults: ', hashTagResults);
-
-				// 		for(var i=0; i <  hashTagResults.length; i++) {
-
-				// 			var hashTagObject = hashTagResults[ i ];
-				// 			var hashTagValue = hashTagObject.value;
-				// 			console.log('hashTagValue: ', hashTagValue);
-				// 			tempHashTagArray.push(hashTagValue);
-				// 		}
-
-				// 		console.log('hashtag array: ', tempHashTagArray);
-
-				// 		tempEntryObject.hashTags = tempHashTagArray;
-
-				// 		tempFeedObject.addEntry(tempEntryObject);
-
-				// 	}).done();
-				
-				// }
-
-				// else {
-				// 	tempFeedObject.addEntry(tempEntryObject);
-				// }
 
 			}
 
@@ -442,16 +471,20 @@ var queryAllFeeds = function(rssList, fileName) {
 				saveCounter += saveStatus;
 			}
 
+			(masterFeedSaveList.length === saveCounter) ? console.log('All feeds stored for this section: ', fileName) : console.log('Problem storing feeds stored for this section: ', fileName);
 			console.log('Number saved: ', saveCounter);
 
-			(masterFeedSaveList.length === saveCounter) ? console.log('All feeds stored for this section: ', fileName) : console.log('Problem storing feeds stored for this section: ', fileName);
+			masterSaveCounter += saveCounter;
+
 
 		}).then(function(blah) {
-			console.log('Save is done');
+			console.log('Total saved: ', masterSaveCounter);
+
 		}).done();
 
 	}).then(function(blah) {
 		console.log('queryAndStoreFeeds is finished');
+		console.log('bad RSS List', badRSSList);
 		twitterSearchDbase();
 	}).done();
 };
@@ -471,9 +504,9 @@ var twitterSearchDbase = function() {
 			console.log('Dbase keys: ', Object.keys(result));
 
 			for(var key in result) {
-				var tempBlah = result[key];
-				console.log('temp whatever section: ', tempBlah.section);
-				console.log('temp whatever title: ', tempBlah.title);
+				var newsSection = result[key];
+				console.log('temp whatever section: ', newsSection.section);
+				console.log('temp whatever title: ', newsSection.title);
 
 			}
 

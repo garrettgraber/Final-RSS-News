@@ -1,0 +1,11 @@
+http://rss.cnn.com/rss/edition_world.rss
+http://feeds.bbci.co.uk/news/rss.xml?edition=int
+http://www.huffingtonpost.com/feeds/verticals/world/index.xml
+http://feeds.reuters.com/Reuters/worldNews
+http://hosted2.ap.org/atom/APDEFAULT/cae69a7523db45408eeb2b3a98c0c9c5
+http://feeds.foxnews.com/foxnews/world
+http://www.latimes.com/world/worldnow/rss2.0.xml
+http://www.telegraph.co.uk/news/worldnews/rss
+http://www.cnbc.com/id/100727362/device/rss/rss.html
+http://english.pravda.ru/world/export-articles.xml
+http://feeds.smh.com.au/rssheadlines/world.xml

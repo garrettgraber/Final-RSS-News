@@ -1,0 +1,9 @@
+http://rss.cnn.com/rss/edition_europe.rss
+http://www.nytimes.com/services/xml/rss/nyt/Europe.xml
+http://feeds.bbci.co.uk/news/world/europe/rss.xml
+http://www.forbes.com/europe_news/index.xml
+http://www.huffingtonpost.com/tag/europe/feed
+http://www.latimes.com/world/europe/rss2.0.xml
+http://www.cnbc.com/id/19794221/device/rss/rss.html
+http://rt.com/rss/politics/
+http://english.pravda.ru/russia/export-articles.xml

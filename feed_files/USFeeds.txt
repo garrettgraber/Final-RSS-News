@@ -1,0 +1,7 @@
+http://rss.cnn.com/rss/edition_us.rss
+http://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml
+http://feeds.reuters.com/Reuters/domesticNews
+http://hosted2.ap.org/atom/APDEFAULT/386c25518f464186bf7a2ac026580ce7
+http://feeds.foxnews.com/foxnews/national
+http://www.cnbc.com/id/15837362/device/rss/rss.html
+http://rt.com/rss/usa/

@@ -1,0 +1,21 @@
+
+http://feeds.bbci.co.uk/news/world/europe/rss.xml?edition=int#
+
+http://feeds.bbci.co.uk/news/world/europe/rss.xml
+
+List of news sites:
+
+1. CNN
+2. New York Times
+5. BBC
+6. Forbes
+7. The Guardian
+8. USA Today
+9. Huffington Post
+10. Yahoo News
+11. Reuters
+12. Bloomberg
+13. Fox News
+14. LA Times
+15. The Telegraph
+16. Russia Today
