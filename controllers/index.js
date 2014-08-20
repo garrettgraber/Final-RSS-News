@@ -67,16 +67,20 @@ var indexController = {
 				if(Object.keys(result).length === 0) {
 
 					var rssDirectoryObjTemp = getFeedList(rssFileList);
+					var feedNumberTotal = 0;
 
 					for(var key in rssDirectoryObjTemp) {
 
 						var rssUrlListTemp = rssDirectoryObjTemp[key];
+						var currentRssUrlTotal = rssUrlListTemp.length;
+						feedNumberTotal += currentRssUrlTotal;
 						console.log('key: ', key);
 						console.log('rssUrlListTemp: ', rssUrlListTemp);
 						queryAllFeeds(rssUrlListTemp, key);
 
 					}
 
+					console.log('Total number of feeds in files: ', feedNumberTotal);
 
 				}
 			}
