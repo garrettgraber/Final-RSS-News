@@ -182,11 +182,14 @@ var findhashTags = function(url) {
 			}
 		}
 
-		if(metaTagsFoundNewsKeywords !== undefined) {
-			var metaTagsList = metaTagsFoundNewsKeywords.split(',');
-		}
-		if(metaTagsFoundKeyword !== undefined) {
-			var metaTagsList = metaTagsFoundKeyword.split(',');
+		else {
+
+			if(metaTagsFoundNewsKeywords !== undefined) {
+				var metaTagsList = metaTagsFoundNewsKeywords.split(',');
+			}
+			if(metaTagsFoundKeyword !== undefined) {
+				var metaTagsList = metaTagsFoundKeyword.split(',');
+			}
 		}
 
 		
