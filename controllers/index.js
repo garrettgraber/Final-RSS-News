@@ -364,18 +364,7 @@ var queryAllFeeds = function(rssList, fileName) {
 						tempTagArray = [];
 					}
 
-					// console.log('tag keys: ', Object.keys(rssCategoryArray));
-
-					// console.log('tag keys: ', tempTagArray );
-
-
-
-
-					// var promiseArray = [];
-
-					// for(var j=0; j < rssCategoryArray.length; j++) {
-					// 	promiseArray.push( searchTwitterHashtag( rssCategoryArray[ j ], TwitterObject ) );
-					// }
+				
 
 					var summaryUseIndex = rssDataJson.summary.indexOf('<');
 					var summaryUse = rssDataJson.summary.slice(0, summaryUseIndex);
@@ -402,40 +391,54 @@ var queryAllFeeds = function(rssList, fileName) {
 
 					tempFeedObject.addEntry(tempEntryObject);
 
-					// if(rssCategoryArray.length > 0) {
 
-					// 	var promiseTwitter = Q.allSettled( promiseArray );
+					console.log('tag keys: ', Object.keys(rssCategoryArray));
 
-					// 	var promiseKeys = promiseTwitter.keys();
-					// 	// console.log('Promise keys: ', promiseKeys);
+					console.log('tag keys: ', tempTagArray );
 
-					// 	promiseTwitter.then(function(hashTagResults) {
 
-					// 		var tempHashTagArray = [];
 
-					// 		console.log('hashTagResults: ', hashTagResults);
 
-					// 		for(var i=0; i <  hashTagResults.length; i++) {
+					var promiseArray = [];
 
-					// 			var hashTagObject = hashTagResults[ i ];
-					// 			var hashTagValue = hashTagObject.value;
-					// 			console.log('hashTagValue: ', hashTagValue);
-					// 			tempHashTagArray.push(hashTagValue);
-					// 		}
+					for(var j=0; j < rssCategoryArray.length; j++) {
+						promiseArray.push( searchTwitterHashtag( rssCategoryArray[ j ], TwitterObject ) );
+					}
 
-					// 		console.log('hashtag array: ', tempHashTagArray);
+					if(rssCategoryArray.length > 0) {
 
-					// 		tempEntryObject.hashTags = tempHashTagArray;
+						var promiseTwitter = Q.allSettled( promiseArray );
 
-					// 		tempFeedObject.addEntry(tempEntryObject);
+						var promiseKeys = promiseTwitter.keys();
+						// console.log('Promise keys: ', promiseKeys);
 
-					// 	}).done();
+						promiseTwitter.then(function(hashTagResults) {
+
+							var tempHashTagArray = [];
+
+							console.log('hashTagResults: ', hashTagResults);
+
+							for(var i=0; i <  hashTagResults.length; i++) {
+
+								var hashTagObject = hashTagResults[ i ];
+								var hashTagValue = hashTagObject.value;
+								console.log('hashTagValue: ', hashTagValue);
+								tempHashTagArray.push(hashTagValue);
+							}
+
+							console.log('hashtag array: ', tempHashTagArray);
+
+							tempEntryObject.hashTags = tempHashTagArray;
+
+							tempFeedObject.addEntry(tempEntryObject);
+
+						}).done();
 					
-					// }
+					}
 
-					// else {
-					// 	tempFeedObject.addEntry(tempEntryObject);
-					// }
+					else {
+						tempFeedObject.addEntry(tempEntryObject);
+					}
 
 				}
 
