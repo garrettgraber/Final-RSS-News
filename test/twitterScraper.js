@@ -3,13 +3,22 @@
 var cheerio = require('cheerio');
 var Promise = require("bluebird");
 var request = Promise.promisify(require('request'));
+var _ = require('underscore');
 
-var Twit = Promise.promisifyAll(require('twit'));
+// var Twit = Promise.promisifyAll(require('twit'));
+
+var Twit = require('twit');
+Promise.promisifyAll(Twit.prototype);
 
 // var Twit = require('twit');
 
 
 var url = 'http://www.huffingtonpost.com';
+var url2 = 'http://www.huffingtonpost.com/2014/08/20/obama-james-foley_n_5695270.html';
+var url3 = 'http://www.huffingtonpost.com/2014/08/20/us-hostages-syria_n_5696419.html';
+var url4 = 'http://www.nytimes.com/2014/08/21/world/middleeast/us-commandos-tried-to-rescue-foley-and-other-hostages.html?hp&action=click&pgtype=Homepage&version=LedeSum&module=first-column-region&region=top-news&WT.nav=top-news';
+var url5 = 'http://www.huffingtonpost.com/2014/08/18/kim-kardashian-bikini-mexico_n_5689303.html?cps=gravity';
+
 
 var CUSTOMER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
 var CUSTOMER_SECRET = 'Y30LpiAdtq4cT2Ubvt4xrd5Kno34gGr9Jnary9wQcdxd2nnGgO';
@@ -35,23 +44,34 @@ var searchTwitterTag = function(rssTag) {
 
 	var hashTag = convertRssTagHashtag(rssTag);
 
-	console.log('Converted hashtag: ', hashTag);
-	
-	var twitterPromise = twitterObject.get('search/tweets', {q:hashTag, count:1});
+	// console.log('Converted hashtag: ', hashTag);
+	// console.log('Methods on the twitterObject: ', _.functions(twitterObject));
+	// console.log('Twit: ', Twit);
 
-	twitterPromise.then(function(data) {
-
-		console.log('Searching twitter for: ', hashTag);
-
+	// var twitterGet = Promise.promisify(twitterObject.get, twitterObject);
+	// Promise.promisify(twitterObject.get);
+	var twitterPromise = twitterObject.getAsync('search/tweets', {q:hashTag, count:1}).spread(function(data, res, error) {
+		// console.log('Data: ', data);
+		// console.log('Error: ', error);
 		if(data.search_metadata.count > 0) {
-			console.log('Hashtag found: ', hashTag);
+			// console.log('Hashtag found: ', hashTag);
 			return Promise.resolve(hashTag);
 		}
 		else {
-			console.log('Hashtag not found: ', hashTag);
+			// console.log('Hashtag not found: ', hashTag);
 			return Promise.resolve('');
 		}
-	}); 
+	});
+
+	// console.log('twitterPromise: ', twitterPromise);
+
+	return twitterPromise.then(function(data) {
+
+		// console.log('Data 2: ', data);
+	
+		return Promise.resolve(data);
+	});
+
 
 	// twitterObject.get('search/tweets', {q:hashTag, count:1}, function(error, data, res) {
 
@@ -69,6 +89,29 @@ var searchTwitterTag = function(rssTag) {
 
 };
 
+var searchTagList = function(inArray) {
+
+	var hashTagMaster = [];
+
+
+	for(var i=0; i < inArray.length; i++) {
+		var tempPromise = searchTwitterTag(inArray[ i ]);
+		hashTagMaster.push(tempPromise);
+
+		// tempPromise.then(function(data) {
+		// 	console.log('Hashtag found search function: ', data);
+
+		// });
+	}
+
+	for(var i=0; i < hashTagMaster.length; i++) {
+		var tempPromise = hashTagMaster[ i ];
+		tempPromise.then(function(data) {
+			console.log('Hashtag found search function: ', data);
+		});
+	}
+}
+
 
 
 var htmlFromPage = function(inUrl) {
@@ -84,15 +127,87 @@ var htmlFromPage = function(inUrl) {
 
 };
 
+var findRootUrl = function(url) {
+	var urlStart = url.indexOf('http://');
+	var urlEnd = url.indexOf('.com');
+	var urlRoot = url.slice(urlStart + 7, urlEnd + 4);
+	console.log('urlRoot: ', urlRoot);
+	return urlRoot;
+};
+
 var findhashTags = function(url) {
 
 	htmlFromPage(url).then(function(result) {
-		console.log(result);
+
+
+		// console.log(result);
 		$ = cheerio.load(result);
+
+		var urlRoot = findRootUrl(url);
+
 		var titleFound = $('title').text();
-		var tagsFound = $('.follow bottom-tags');
+
+		var metaTagsFoundKeyword = $('meta[name="keywords"]').attr('content');
+		var metaTagsFoundNewsKeywords = $('meta[name="news_keywords"]').attr('content');
+
+
+		console.log('metaTagsFoundKeyword: ', metaTagsFoundKeyword);
+		console.log('metaTagsFoundNewsKeywords: ', metaTagsFoundNewsKeywords);
+
+		if(urlRoot === 'www.huffingtonpost.com') {
+
+			var metaTagsFound = $('meta[name="sailthru.tags"]').attr('content');
+			var metaTagsList = metaTagsFound.split(',')
+
+
+			
+			var tagsFound = $('.bottom-tags').find('a');
+			// find('.group');
+			// console.log('tagsFound: ', tagsFound);
+			console.log('tagsFound length: ', tagsFound.length);
+			console.log('tagsFound type: ', typeof(tagsFound));
+
+			var tagListOnPage = [];
+
+			for(var i=0; i < tagsFound.length; i++) {
+				var tempCheerioObject = tagsFound[i];
+				// console.log('tempCheerioObject: ', tempCheerioObject); 
+				var tagOnpage = tempCheerioObject.children[0].data;
+
+				tagListOnPage.push(tagOnpage);
+				// console.log('tempCheerioObject: ', tempCheerioObject);
+				// var tagValue = tempCheerioObject.text();
+				// console.log('tagValue: ', tagValue);
+
+			}
+		}
+
+		if(metaTagsFoundNewsKeywords !== undefined) {
+			var metaTagsList = metaTagsFoundNewsKeywords.split(',');
+		}
+		if(metaTagsFoundKeyword !== undefined) {
+			var metaTagsList = metaTagsFoundKeyword.split(',');
+		}
+
+		
+
+
+		// var aTags = tagsFound.find('a').text();
+
+		// console.log('A tags: ', aTags);
 		console.log('title: ', titleFound);
-		console.log()
+		console.log('title length: ', titleFound.length);
+
+		if(tagListOnPage !== undefined) {
+			console.log('Tags found: ', tagListOnPage);
+			searchTagList(tagListOnPage);
+		}
+		if(metaTagsList !== undefined) {
+			console.log('metaTagsFound: ', metaTagsFound);
+			searchTagList(metaTagsList);
+		}
+
+
 	});
 
 };
@@ -129,6 +244,29 @@ var convertRssTagHashtag = function(rssTag) {
 	return rssTagFinal;
 
 };
+
+if(process.argv.length >= 3) {
+	// var tempTag = process.argv[2];
+
+	var firstValue = process.argv[2];
+
+	if(firstValue.indexOf('http://') > -1) {
+		findhashTags(firstValue);
+	}
+	else {
+
+		var tempTagArray = process.argv.slice(2, process.argv.length);
+
+		searchTagList(tempTagArray);
+
+		// findhashTags(url5);
+	}
+
+	// var twitterPromise = searchTwitterTag(tempTag);
+	// twitterPromise.then(function(data) {
+	// 	console.log('Data found: ', data);
+	// });
+}
 
 
 module.exports = {'convertRssTagHashtag':convertRssTagHashtag, 'searchTwitterTag':searchTwitterTag};
