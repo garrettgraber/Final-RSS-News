@@ -17,7 +17,6 @@ var url = 'http://www.huffingtonpost.com';
 var url2 = 'http://www.huffingtonpost.com/2014/08/20/obama-james-foley_n_5695270.html';
 var url3 = 'http://www.huffingtonpost.com/2014/08/20/us-hostages-syria_n_5696419.html';
 var url4 = 'http://www.nytimes.com/2014/08/21/world/middleeast/us-commandos-tried-to-rescue-foley-and-other-hostages.html?hp&action=click&pgtype=Homepage&version=LedeSum&module=first-column-region&region=top-news&WT.nav=top-news';
-var url5 = 'http://www.huffingtonpost.com/2014/08/18/kim-kardashian-bikini-mexico_n_5689303.html?cps=gravity';
 
 
 var CUSTOMER_KEY = '6AVqBLxtOZkWeWgcdsdXMLLTN';
@@ -38,6 +37,12 @@ var createTwitterObject = function() {
 	return Twitter;
 };
 
+var displayIfExists = function(termDisplay, termValue) {
+	if(termValue !== undefined && termValue !== '' && termValue !== null) {
+		console.log(termDisplay + ': ', termValue);
+	}
+};
+
 var searchTwitterTag = function(rssTag) {
 
 	var twitterObject = createTwitterObject();
@@ -53,9 +58,56 @@ var searchTwitterTag = function(rssTag) {
 	var twitterPromise = twitterObject.getAsync('search/tweets', {q:hashTag, count:1}).spread(function(data, res, error) {
 		// console.log('Data: ', data);
 		// console.log('Error: ', error);
+
+		// console.log('Data type: ', typeof(data));
+		// console.log('Data keys: ', Object.keys(data));
+		// console.log('Data keys statuses: ', Object.keys(data.statuses));
+
 		if(data.search_metadata.count > 0) {
 			// console.log('Hashtag found: ', hashTag);
-			return Promise.resolve(hashTag);
+
+			var internalTweetData = data.statuses[0];
+			
+			if(internalTweetData !== undefined) {
+
+				console.log('\n\nTweet: ', internalTweetData.text);
+				console.log('hashtag: ', hashTag);
+
+				displayIfExists('Source', internalTweetData.source);
+				// console.log('Source: ', internalTweetData.source);
+
+				var userTweetData = internalTweetData.user;
+
+				displayIfExists('User', userTweetData.name);
+				// console.log('User: ', userTweetData.name);
+
+				displayIfExists('Screen name', userTweetData.screen_name);
+				// console.log('Screen name: ', userTweetData.screen_name);
+
+				displayIfExists('Description', userTweetData.description);
+				// console.log('Description: ', userTweetData.description);
+
+				displayIfExists('Place', userTweetData.location);
+				// console.log('Place: ', userTweetData.location);
+
+				displayIfExists('Time-zone', userTweetData.time_zone);
+
+				displayIfExists('Utc-offset', userTweetData.utc_offset);
+
+				displayIfExists('Geo-enabled', userTweetData.geo_enabled)
+				// console.log('Time-zone: ', userTweetData.time_zone);
+				// console.log('type of data.statuses: ', typeof(internalTweetData));
+				// console.log('keys of data.statuses: ', Object.keys(internalTweetData));
+				// console.log('Keys of user: ', Object.keys(userTweetData));
+
+				return Promise.resolve(hashTag);
+
+			}
+			else {
+				console.log('\n\nTweet undefined for hashtag: ', hashTag);
+				return Promise.resolve('');
+			}
+
 		}
 		else {
 			// console.log('Hashtag not found: ', hashTag);
@@ -107,6 +159,10 @@ var searchTagList = function(inArray) {
 	for(var i=0; i < hashTagMaster.length; i++) {
 		var tempPromise = hashTagMaster[ i ];
 		tempPromise.then(function(data) {
+
+			if(data === '') {
+				data = 'not found by api';
+			}
 			console.log('Hashtag found search function: ', data);
 		});
 	}
@@ -120,8 +176,9 @@ var htmlFromPage = function(inUrl) {
 		
 		var response = result[0];
     	var body = result[1];
+    	// console.log('body: ', body);
 
-    	console.log(response.statusCode);
+    	console.log('\n\nPage parse status: ', response.statusCode);
     	return Promise.resolve(body);
 	});
 
@@ -253,7 +310,7 @@ if(process.argv.length >= 3) {
 
 	var firstValue = process.argv[2];
 
-	if(firstValue.indexOf('http://') > -1) {
+	if( (firstValue.indexOf('http://') > -1) || (firstValue.indexOf('https://') > -1) ) {
 		findhashTags(firstValue);
 	}
 	else {
@@ -269,6 +326,9 @@ if(process.argv.length >= 3) {
 	// twitterPromise.then(function(data) {
 	// 	console.log('Data found: ', data);
 	// });
+}
+else {
+	findhashTags(url3);
 }
 
 
